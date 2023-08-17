@@ -33,16 +33,18 @@ pipeline {
     environment {
         AZURE_CREDENTIALS = credentials('7814b8ca-09ee-4109-949c-f779d541aedb')  // Azure Service Principal credentials ID
         ACR_NAME = 'linuxappcr'  // Azure Container Registry name
-        DOCKER_IMAGE_TAG = "${env.BUILD_NUMBER}"  // Using build number as the Docker image tag
-        DOCKERFILE_PATH = 'java-maven-sonar-argocd-helm-k8s/spring-boot-app/Dockerfile'  // Path to your Dockerfile
+        DOCKER_IMAGE = "chandanmedhi/maven-cicd:${BUILD_NUMBER}"  // Using build number as the Docker image tag
+        //DOCKERFILE_PATH = 'java-maven-sonar-argocd-helm-k8s/spring-boot-app/Dockerfile'  // Path to your Dockerfile
     }
     
     steps {
         script {
+            sh 'cd java-maven-sonar-argocd-helm-k8s/spring-boot-app && docker build -t ${DOCKER_IMAGE} .'
             def acrLogin = azureLogin(credentialsId: "${AZURE_CREDENTIALS}", useAgent: true)
             docker.withRegistry("https://${ACR_NAME}.azurecr.io", "${acrLogin}") {
-                def customImage = docker.build("${ACR_NAME}/${env.JOB_NAME}:${DOCKER_IMAGE_TAG}", "${DOCKERFILE_PATH}")
-                customImage.push()
+                def dockerImage = docker.image("${ACR_NAME}/${env.JOB_NAME}:${DOCKER_IMAGE}", "${DOCKERFILE_PATH}") {
+                dockerImage.push()
+              }
             }
         }
     }
